@@ -51,88 +51,34 @@ input {
   display: flex;
 }
 
-/* ===== Screen 1 — Landing ===== */
-#landing-screen {
+/* ===== Screen 1 — Home ===== */
+#home-screen {
   flex-direction: column;
   align-items: center;
   justify-content: center;
   min-height: 100vh;
-  gap: 24px;
 }
 
-.phone-icon-wrapper {
-  width: 140px;
-  height: 140px;
-  border-radius: 50%;
-  background: var(--green);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  animation: pulse 2s ease-in-out infinite;
-  transition: transform 0.2s, box-shadow 0.2s;
-}
-
-.phone-icon-wrapper:hover {
-  transform: scale(1.08);
-  box-shadow: 0 0 40px rgba(34, 197, 94, 0.4);
-}
-
-.phone-icon-wrapper svg {
-  width: 64px;
-  height: 64px;
-  fill: #fff;
-}
-
-@keyframes pulse {
-  0%, 100% {
-    box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.5);
-  }
-  50% {
-    box-shadow: 0 0 0 20px rgba(34, 197, 94, 0);
-  }
-}
-
-.landing-tagline {
-  font-size: 1.1rem;
-  color: var(--text-muted);
-}
-
-/* ===== Modals ===== */
-.modal-overlay {
-  display: none;
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.7);
-  backdrop-filter: blur(4px);
-  z-index: 100;
-  align-items: center;
-  justify-content: center;
-}
-
-.modal-overlay.active {
-  display: flex;
-}
-
-.modal {
+.home-card {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 16px;
-  padding: 32px;
+  padding: 36px 32px;
   width: 90%;
-  max-width: 380px;
+  max-width: 360px;
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 16px;
 }
 
-.modal h2 {
+.home-title {
   text-align: center;
-  font-size: 1.3rem;
-  font-weight: 600;
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: var(--green);
 }
 
-.modal input[type="text"] {
+.home-input {
   background: var(--bg);
   border: 1px solid var(--border);
   border-radius: 10px;
@@ -142,106 +88,80 @@ input {
   transition: border-color 0.2s;
 }
 
-.modal input[type="text"]:focus {
+.home-input:focus {
   border-color: var(--accent);
 }
 
-.modal .btn-join {
-  background: var(--accent);
-  color: #fff;
+.home-code-input {
+  text-transform: uppercase;
+  letter-spacing: 4px;
+  text-align: center;
+  font-size: 1.2rem;
+  font-family: "SF Mono", "Fira Code", "Consolas", monospace;
+  flex: 1;
+  min-width: 0;
+}
+
+.home-btn {
   border-radius: 10px;
   padding: 12px;
   font-size: 1rem;
   font-weight: 600;
-  transition: background 0.2s;
-}
-
-.modal .btn-join:hover {
-  background: var(--accent-dim);
-}
-
-.modal .btn-back {
-  background: none;
-  color: var(--text-muted);
-  font-size: 0.9rem;
-  padding: 8px;
-  transition: color 0.2s;
-}
-
-.modal .btn-back:hover {
-  color: var(--text);
-}
-
-/* Lobby code input special styling */
-#lobby-code-input {
-  text-transform: uppercase;
-  letter-spacing: 4px;
-  text-align: center;
-  font-size: 1.3rem;
-  font-family: "SF Mono", "Fira Code", "Consolas", monospace;
-}
-
-/* ===== Screen 2 — Choice ===== */
-#choice-screen {
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  min-height: 100vh;
-  gap: 16px;
-}
-
-.choice-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 24px;
-}
-
-.choice-container h2 {
-  font-size: 1.5rem;
-  font-weight: 700;
-}
-
-.choice-subtitle {
-  color: var(--text-muted);
-  font-size: 1rem;
-}
-
-.choice-buttons {
-  display: flex;
-  gap: 16px;
-}
-
-.btn-choice {
-  padding: 16px 32px;
-  border-radius: 14px;
-  font-size: 1.1rem;
-  font-weight: 600;
   color: #fff;
-  transition: transform 0.2s, box-shadow 0.2s;
+  transition: transform 0.15s, box-shadow 0.15s;
 }
 
-.btn-choice:hover {
-  transform: translateY(-2px);
+.home-btn:hover {
+  transform: translateY(-1px);
 }
 
-.btn-choice-create {
+.home-btn-create {
   background: var(--green);
 }
 
-.btn-choice-create:hover {
-  box-shadow: 0 0 24px rgba(34, 197, 94, 0.4);
+.home-btn-create:hover {
+  box-shadow: 0 0 20px rgba(34, 197, 94, 0.35);
 }
 
-.btn-choice-join {
+.home-btn-join {
   background: var(--accent);
+  padding: 12px 20px;
 }
 
-.btn-choice-join:hover {
-  box-shadow: 0 0 24px rgba(99, 102, 241, 0.4);
+.home-btn-join:hover {
+  box-shadow: 0 0 20px rgba(99, 102, 241, 0.35);
 }
 
-/* ===== Screen 3 — Lobby ===== */
+.home-divider {
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  position: relative;
+}
+
+.home-divider span {
+  background: var(--surface);
+  padding: 0 12px;
+  position: relative;
+  z-index: 1;
+}
+
+.home-divider::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: var(--border);
+}
+
+.home-join-row {
+  display: flex;
+  gap: 10px;
+}
+
+/* ===== Lobby ===== */
 #lobby-screen {
   flex-direction: column;
   min-height: 100vh;
@@ -669,25 +589,8 @@ input {
     gap: 8px;
   }
 
-  .choice-buttons {
-    flex-direction: column;
-    width: 100%;
-    padding: 0 20px;
-  }
-
-  .btn-choice {
-    width: 100%;
-    text-align: center;
-  }
-
-  .phone-icon-wrapper {
-    width: 110px;
-    height: 110px;
-  }
-
-  .phone-icon-wrapper svg {
-    width: 48px;
-    height: 48px;
+  .home-card {
+    padding: 28px 20px;
   }
 
   .call-timer {

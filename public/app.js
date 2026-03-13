@@ -29,8 +29,8 @@ const state = {
 
 // ---------- DOM Cache ----------
 const $ = (sel) => document.querySelector(sel);
-const screens = { landing: null, choice: null, lobby: null, call: null, calling: null };
-let nameModal, joinModal, incomingOverlay, toast, lobbyGrid;
+const screens = { home: null, lobby: null, call: null, calling: null };
+let incomingOverlay, toast, lobbyGrid;
 
 // ---------- Helpers ----------
 function getInitials(name) {
@@ -85,7 +85,6 @@ socket.on("roomCreated", ({ code }) => {
 socket.on("roomJoined", ({ code }) => {
   state.lobbyCode = code;
   state.isHost = false;
-  joinModal.classList.remove("active");
   enterLobbyScreen();
 });
 
@@ -126,34 +125,24 @@ socket.on("callCancelled", () => {
   }
 });
 
-// ---------- Landing ----------
-function initLanding() {
-  $("#phone-icon-btn").addEventListener("click", () => {
-    nameModal.classList.add("active");
-    $("#name-input").focus();
-  });
-}
-
-// ---------- Name Submit → Choice Screen ----------
-function submitName() {
-  const name = $("#name-input").value.trim();
-  if (!name) { showToast("Please enter a name"); return; }
-  state.userName = name;
-  $("#choice-user-name").textContent = name;
-  nameModal.classList.remove("active");
-  showScreen("choice");
-}
+// ---------- (Landing removed — single home screen) ----------
 
 // ---------- Create Lobby ----------
 function createLobby() {
-  socket.emit("createRoom", { name: state.userName });
+  const name = $("#name-input").value.trim();
+  if (!name) { showToast("Please enter a name"); return; }
+  state.userName = name;
+  socket.emit("createRoom", { name });
 }
 
 // ---------- Join Lobby by Code ----------
 function joinLobbyByCode() {
+  const name = $("#name-input").value.trim();
+  if (!name) { showToast("Please enter a name"); return; }
   const input = $("#lobby-code-input").value.trim().toUpperCase();
   if (input.length !== 4) { showToast("Code must be 4 characters"); return; }
-  socket.emit("joinRoom", { code: input, name: state.userName });
+  state.userName = name;
+  socket.emit("joinRoom", { code: input, name });
 }
 
 // ---------- Enter Lobby Screen (shared) ----------
@@ -180,7 +169,7 @@ function leaveLobby() {
   state.isHost = false;
   state.userName = null;
   incomingOverlay.classList.remove("active");
-  showScreen("landing");
+  showScreen("home");
   $("#name-input").value = "";
   $("#lobby-code-input").value = "";
 }
@@ -434,36 +423,18 @@ function copyLobbyCode() {
 
 // ---------- Initialization ----------
 document.addEventListener("DOMContentLoaded", () => {
-  screens.landing = $("#landing-screen");
-  screens.choice = $("#choice-screen");
+  screens.home = $("#home-screen");
   screens.lobby = $("#lobby-screen");
   screens.call = $("#call-screen");
   screens.calling = $("#calling-screen");
-  nameModal = $("#name-modal");
-  joinModal = $("#join-modal");
   incomingOverlay = $("#incoming-call-overlay");
   toast = $("#toast");
   lobbyGrid = $("#lobby-grid");
 
-  initLanding();
-
-  // Name modal
-  $("#name-input").addEventListener("keydown", (e) => { if (e.key === "Enter") submitName(); });
-  $("#btn-name-submit").addEventListener("click", submitName);
-
-  // Choice screen
+  // Home screen
   $("#btn-create-lobby").addEventListener("click", createLobby);
-  $("#btn-join-lobby").addEventListener("click", () => {
-    joinModal.classList.add("active");
-    $("#lobby-code-input").focus();
-  });
-
-  // Join modal
+  $("#btn-join-lobby").addEventListener("click", joinLobbyByCode);
   $("#lobby-code-input").addEventListener("keydown", (e) => { if (e.key === "Enter") joinLobbyByCode(); });
-  $("#btn-submit-code").addEventListener("click", joinLobbyByCode);
-  $("#btn-back-to-choice").addEventListener("click", () => {
-    joinModal.classList.remove("active");
-  });
 
   // Lobby
   $("#btn-leave").addEventListener("click", leaveLobby);

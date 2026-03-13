@@ -8,44 +8,17 @@
 </head>
 <body>
 
-  <!-- ===== Screen 1: Landing ===== -->
-  <div id="landing-screen" class="screen active">
-    <button id="phone-icon-btn" class="phone-icon-wrapper" aria-label="Start">
-      <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-        <path d="M6.62 10.79a15.053 15.053 0 006.59 6.59l2.2-2.2a1.003 1.003 0 011.01-.24c1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1C10.07 21 3 13.93 3 4c0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.1.31.03.66-.25 1.02l-2.2 2.2z"/>
-      </svg>
-    </button>
-    <p class="landing-tagline">Click to get started</p>
-  </div>
-
-  <!-- ===== Name Entry Modal ===== -->
-  <div id="name-modal" class="modal-overlay">
-    <div class="modal">
-      <h2>Enter Your Name</h2>
-      <input type="text" id="name-input" placeholder="Your name" maxlength="24" autocomplete="off" />
-      <button id="btn-name-submit" class="btn-join">Next</button>
-    </div>
-  </div>
-
-  <!-- ===== Screen 2: Choice ===== -->
-  <div id="choice-screen" class="screen">
-    <div class="choice-container">
-      <h2>Welcome, <span id="choice-user-name"></span></h2>
-      <p class="choice-subtitle">What would you like to do?</p>
-      <div class="choice-buttons">
-        <button id="btn-create-lobby" class="btn-choice btn-choice-create">Create Lobby</button>
-        <button id="btn-join-lobby" class="btn-choice btn-choice-join">Join Lobby</button>
+  <!-- ===== Screen 1: Home ===== -->
+  <div id="home-screen" class="screen active">
+    <div class="home-card">
+      <h1 class="home-title">Prank Call</h1>
+      <input type="text" id="name-input" class="home-input" placeholder="Your name" maxlength="24" autocomplete="off" />
+      <button id="btn-create-lobby" class="home-btn home-btn-create">Create Lobby</button>
+      <div class="home-divider"><span>or join one</span></div>
+      <div class="home-join-row">
+        <input type="text" id="lobby-code-input" class="home-input home-code-input" placeholder="CODE" maxlength="4" autocomplete="off" />
+        <button id="btn-join-lobby" class="home-btn home-btn-join">Join</button>
       </div>
-    </div>
-  </div>
-
-  <!-- ===== Join Lobby Modal ===== -->
-  <div id="join-modal" class="modal-overlay">
-    <div class="modal">
-      <h2>Enter Lobby Code</h2>
-      <input type="text" id="lobby-code-input" placeholder="e.g. A3BK" maxlength="4" autocomplete="off" />
-      <button id="btn-submit-code" class="btn-join">Join</button>
-      <button id="btn-back-to-choice" class="btn-back">Back</button>
     </div>
   </div>
 
