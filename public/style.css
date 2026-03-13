@@ -1,0 +1,696 @@
+/* ===== Reset & Base ===== */
+*,
+*::before,
+*::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+:root {
+  --bg: #0f0f0f;
+  --surface: #1a1a1a;
+  --surface-hover: #252525;
+  --border: #2a2a2a;
+  --text: #e8e8e8;
+  --text-muted: #888;
+  --green: #22c55e;
+  --green-dim: #16a34a;
+  --red: #ef4444;
+  --red-dim: #dc2626;
+  --accent: #6366f1;
+  --accent-dim: #4f46e5;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  color: var(--text);
+}
+
+body {
+  background: var(--bg);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+button {
+  cursor: pointer;
+  font-family: inherit;
+  border: none;
+  outline: none;
+}
+
+input {
+  font-family: inherit;
+  outline: none;
+}
+
+/* ===== Screens (show/hide) ===== */
+.screen {
+  display: none;
+}
+
+.screen.active {
+  display: flex;
+}
+
+/* ===== Screen 1 — Landing ===== */
+#landing-screen {
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  gap: 24px;
+}
+
+.phone-icon-wrapper {
+  width: 140px;
+  height: 140px;
+  border-radius: 50%;
+  background: var(--green);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  animation: pulse 2s ease-in-out infinite;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.phone-icon-wrapper:hover {
+  transform: scale(1.08);
+  box-shadow: 0 0 40px rgba(34, 197, 94, 0.4);
+}
+
+.phone-icon-wrapper svg {
+  width: 64px;
+  height: 64px;
+  fill: #fff;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.5);
+  }
+  50% {
+    box-shadow: 0 0 0 20px rgba(34, 197, 94, 0);
+  }
+}
+
+.landing-tagline {
+  font-size: 1.1rem;
+  color: var(--text-muted);
+}
+
+/* ===== Modals ===== */
+.modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(4px);
+  z-index: 100;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-overlay.active {
+  display: flex;
+}
+
+.modal {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 32px;
+  width: 90%;
+  max-width: 380px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.modal h2 {
+  text-align: center;
+  font-size: 1.3rem;
+  font-weight: 600;
+}
+
+.modal input[type="text"] {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px 16px;
+  font-size: 1rem;
+  color: var(--text);
+  transition: border-color 0.2s;
+}
+
+.modal input[type="text"]:focus {
+  border-color: var(--accent);
+}
+
+.modal .btn-join {
+  background: var(--accent);
+  color: #fff;
+  border-radius: 10px;
+  padding: 12px;
+  font-size: 1rem;
+  font-weight: 600;
+  transition: background 0.2s;
+}
+
+.modal .btn-join:hover {
+  background: var(--accent-dim);
+}
+
+.modal .btn-back {
+  background: none;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  padding: 8px;
+  transition: color 0.2s;
+}
+
+.modal .btn-back:hover {
+  color: var(--text);
+}
+
+/* Lobby code input special styling */
+#lobby-code-input {
+  text-transform: uppercase;
+  letter-spacing: 4px;
+  text-align: center;
+  font-size: 1.3rem;
+  font-family: "SF Mono", "Fira Code", "Consolas", monospace;
+}
+
+/* ===== Screen 2 — Choice ===== */
+#choice-screen {
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  gap: 16px;
+}
+
+.choice-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+}
+
+.choice-container h2 {
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+.choice-subtitle {
+  color: var(--text-muted);
+  font-size: 1rem;
+}
+
+.choice-buttons {
+  display: flex;
+  gap: 16px;
+}
+
+.btn-choice {
+  padding: 16px 32px;
+  border-radius: 14px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #fff;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.btn-choice:hover {
+  transform: translateY(-2px);
+}
+
+.btn-choice-create {
+  background: var(--green);
+}
+
+.btn-choice-create:hover {
+  box-shadow: 0 0 24px rgba(34, 197, 94, 0.4);
+}
+
+.btn-choice-join {
+  background: var(--accent);
+}
+
+.btn-choice-join:hover {
+  box-shadow: 0 0 24px rgba(99, 102, 241, 0.4);
+}
+
+/* ===== Screen 3 — Lobby ===== */
+#lobby-screen {
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.lobby-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 24px;
+  border-bottom: 1px solid var(--border);
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.lobby-header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.lobby-header .app-name {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--green);
+}
+
+.lobby-code-display {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+
+.lobby-code-display strong {
+  color: var(--green);
+  font-family: "SF Mono", "Fira Code", "Consolas", monospace;
+  letter-spacing: 2px;
+  font-size: 1rem;
+}
+
+.btn-copy-code {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  transition: background 0.2s, color 0.2s;
+}
+
+.btn-copy-code:hover {
+  background: var(--surface-hover);
+  color: var(--text);
+}
+
+.lobby-header .user-info {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.btn-leave {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  transition: background 0.2s, color 0.2s;
+}
+
+.btn-leave:hover {
+  background: var(--red);
+  color: #fff;
+  border-color: var(--red);
+}
+
+.lobby-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 16px;
+  padding: 24px;
+  flex: 1;
+}
+
+.lobby-empty {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--text-muted);
+  font-size: 1rem;
+}
+
+/* ===== User Card ===== */
+.user-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  transition: transform 0.2s, border-color 0.2s, opacity 0.3s;
+  position: relative;
+}
+
+.user-card.clickable {
+  cursor: pointer;
+}
+
+.user-card.clickable:hover {
+  transform: translateY(-3px);
+  border-color: var(--green);
+}
+
+.user-card.busy {
+  opacity: 0.45;
+  pointer-events: none;
+}
+
+.user-card.is-you {
+  border-color: var(--accent);
+}
+
+.avatar {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 1.1rem;
+  color: #fff;
+  flex-shrink: 0;
+}
+
+.user-card .user-name {
+  font-weight: 600;
+  font-size: 0.95rem;
+  text-align: center;
+  word-break: break-word;
+}
+
+.status-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8rem;
+  padding: 4px 10px;
+  border-radius: 20px;
+}
+
+.status-badge.available {
+  background: rgba(34, 197, 94, 0.15);
+  color: var(--green);
+}
+
+.status-badge.in-call {
+  background: rgba(239, 68, 68, 0.15);
+  color: var(--red);
+}
+
+.status-badge.calling {
+  background: rgba(234, 179, 8, 0.15);
+  color: #eab308;
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.you-label {
+  font-size: 0.7rem;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-weight: 700;
+}
+
+.host-label {
+  font-size: 0.7rem;
+  color: var(--green);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-weight: 700;
+}
+
+/* ===== Incoming Call Overlay ===== */
+.incoming-call-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(6px);
+  z-index: 200;
+  align-items: center;
+  justify-content: center;
+}
+
+.incoming-call-overlay.active {
+  display: flex;
+}
+
+.incoming-call-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 40px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+  max-width: 340px;
+  width: 90%;
+  animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+  from { transform: translateY(30px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+.incoming-call-card .caller-name {
+  font-size: 1.3rem;
+  font-weight: 700;
+}
+
+.incoming-call-card .calling-text {
+  color: var(--text-muted);
+  font-size: 0.95rem;
+}
+
+.incoming-call-card .call-timer-countdown {
+  color: var(--text-muted);
+  font-size: 0.8rem;
+}
+
+.call-actions {
+  display: flex;
+  gap: 20px;
+}
+
+.btn-accept,
+.btn-decline {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.btn-accept {
+  background: var(--green);
+}
+
+.btn-accept:hover {
+  transform: scale(1.1);
+  box-shadow: 0 0 20px rgba(34, 197, 94, 0.4);
+}
+
+.btn-decline {
+  background: var(--red);
+}
+
+.btn-decline:hover {
+  transform: scale(1.1);
+  box-shadow: 0 0 20px rgba(239, 68, 68, 0.4);
+}
+
+.btn-accept svg,
+.btn-decline svg {
+  width: 28px;
+  height: 28px;
+  fill: #fff;
+}
+
+/* ===== Active Call ===== */
+#call-screen {
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  gap: 32px;
+}
+
+.call-info {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.call-info .call-partner-name {
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+.call-info .call-status-text {
+  color: var(--text-muted);
+  font-size: 0.95rem;
+}
+
+.call-timer {
+  font-size: 2.5rem;
+  font-weight: 300;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+}
+
+.mic-indicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--green);
+  font-size: 0.85rem;
+}
+
+.mic-indicator .mic-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--green);
+  animation: micPulse 1.2s ease-in-out infinite;
+}
+
+@keyframes micPulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(0.8); }
+}
+
+.btn-hangup {
+  background: var(--red);
+  color: #fff;
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.btn-hangup:hover {
+  transform: scale(1.1);
+  box-shadow: 0 0 30px rgba(239, 68, 68, 0.5);
+}
+
+.btn-hangup svg {
+  width: 36px;
+  height: 36px;
+  fill: #fff;
+}
+
+/* ===== Calling Out ===== */
+#calling-screen {
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  gap: 24px;
+}
+
+.calling-text-large {
+  font-size: 1.2rem;
+  color: var(--text-muted);
+}
+
+.btn-cancel-call {
+  background: var(--red);
+  color: #fff;
+  padding: 12px 32px;
+  border-radius: 10px;
+  font-size: 1rem;
+  font-weight: 600;
+  transition: background 0.2s;
+}
+
+.btn-cancel-call:hover {
+  background: var(--red-dim);
+}
+
+/* ===== Toast ===== */
+.toast {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%) translateY(100px);
+  background: var(--surface);
+  border: 1px solid var(--red);
+  color: var(--text);
+  padding: 12px 24px;
+  border-radius: 10px;
+  font-size: 0.9rem;
+  z-index: 300;
+  opacity: 0;
+  transition: transform 0.3s, opacity 0.3s;
+  pointer-events: none;
+}
+
+.toast.show {
+  transform: translateX(-50%) translateY(0);
+  opacity: 1;
+}
+
+/* ===== Responsive ===== */
+@media (max-width: 600px) {
+  .lobby-grid {
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    padding: 16px;
+    gap: 12px;
+  }
+
+  .lobby-header {
+    padding: 12px 16px;
+  }
+
+  .lobby-header-left {
+    gap: 8px;
+  }
+
+  .choice-buttons {
+    flex-direction: column;
+    width: 100%;
+    padding: 0 20px;
+  }
+
+  .btn-choice {
+    width: 100%;
+    text-align: center;
+  }
+
+  .phone-icon-wrapper {
+    width: 110px;
+    height: 110px;
+  }
+
+  .phone-icon-wrapper svg {
+    width: 48px;
+    height: 48px;
+  }
+
+  .call-timer {
+    font-size: 2rem;
+  }
+}
