@@ -1,27 +1,15 @@
 // ============================================================
-// Prank Call — Voice Chat Lobby (with lobby codes)
+// Prank Call — Voice Chat Lobby
 // ============================================================
-// Firebase Realtime Database for presence + lobby signaling
+// Socket.IO for lobby presence & call signaling
 // PeerJS (WebRTC) for peer-to-peer voice calls
 // ============================================================
 
-// ---------- Firebase Config ----------
-const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_PROJECT.firebaseapp.com",
-  databaseURL: "https://YOUR_PROJECT-default-rtdb.firebaseio.com",
-  projectId: "YOUR_PROJECT",
-  storageBucket: "YOUR_PROJECT.appspot.com",
-  messagingSenderId: "000000000000",
-  appId: "YOUR_APP_ID"
-};
-
-firebase.initializeApp(firebaseConfig);
-const db = firebase.database();
+const socket = io();
 
 // ---------- App State ----------
 const state = {
-  userId: null,
+  mySocketId: null,
   userName: null,
   lobbyCode: null,
   isHost: false,
@@ -33,6 +21,10 @@ const state = {
   callStartTime: null,
   incomingTimeout: null,
   callingTimeout: null,
+  currentCallerId: null,   // who is calling us (incoming)
+  currentTargetId: null,   // who we are calling (outgoing)
+  currentPartnerId: null,  // who we are in-call with
+  currentPartnerName: null,
 };
 
 // ---------- DOM Cache ----------
@@ -41,19 +33,6 @@ const screens = { landing: null, choice: null, lobby: null, call: null, calling:
 let nameModal, joinModal, incomingOverlay, toast, lobbyGrid;
 
 // ---------- Helpers ----------
-function generateId() {
-  return "user_" + Math.random().toString(36).substring(2, 10) + Date.now().toString(36);
-}
-
-const LOBBY_CHARS = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
-function generateLobbyCode() {
-  let code = "";
-  for (let i = 0; i < 6; i++) {
-    code += LOBBY_CHARS[Math.floor(Math.random() * LOBBY_CHARS.length)];
-  }
-  return code;
-}
-
 function getInitials(name) {
   return name.split(/\s+/).map((w) => w[0]).join("").toUpperCase().substring(0, 2);
 }
@@ -87,14 +66,67 @@ function escapeHtml(str) {
   return div.innerHTML;
 }
 
-// Scoped Firebase refs
-function usersRef() { return db.ref("lobbies/" + state.lobbyCode + "/users"); }
-function userRef(uid) { return db.ref("lobbies/" + state.lobbyCode + "/users/" + (uid || state.userId)); }
-function callReqRef(uid) { return db.ref("lobbies/" + state.lobbyCode + "/callRequests/" + (uid || state.userId)); }
-function lobbyMetaRef() { return db.ref("lobbies/" + state.lobbyCode + "/meta"); }
-function lobbyRootRef() { return db.ref("lobbies/" + state.lobbyCode); }
+// ---------- Socket.IO Event Handlers ----------
 
-// ---------- Step 1: Landing ----------
+socket.on("connect", () => {
+  state.mySocketId = socket.id;
+});
+
+socket.on("error", (data) => {
+  showToast(data.message || "An error occurred");
+});
+
+socket.on("roomCreated", ({ code }) => {
+  state.lobbyCode = code;
+  state.isHost = true;
+  enterLobbyScreen();
+});
+
+socket.on("roomJoined", ({ code }) => {
+  state.lobbyCode = code;
+  state.isHost = false;
+  joinModal.classList.remove("active");
+  enterLobbyScreen();
+});
+
+socket.on("lobbyState", ({ code, players }) => {
+  renderLobby(players);
+});
+
+socket.on("incomingCall", ({ callerId, callerName }) => {
+  showIncomingCall(callerId, callerName);
+});
+
+socket.on("callAccepted", ({ targetId, targetName }) => {
+  // We are the caller, callee accepted — start PeerJS call
+  if (state.callingTimeout) { clearTimeout(state.callingTimeout); state.callingTimeout = null; }
+  state.currentPartnerId = targetId;
+  state.currentPartnerName = targetName;
+  startCallScreen(targetName);
+  startPeerCall(targetId);
+});
+
+socket.on("callDeclined", () => {
+  if (state.callingTimeout) { clearTimeout(state.callingTimeout); state.callingTimeout = null; }
+  state.currentTargetId = null;
+  showToast("Call was declined");
+  showScreen("lobby");
+});
+
+socket.on("callEnded", () => {
+  endCallLocal();
+});
+
+socket.on("callCancelled", () => {
+  // Caller cancelled before we answered
+  if (incomingOverlay.classList.contains("active")) {
+    if (state.incomingTimeout) { clearTimeout(state.incomingTimeout); state.incomingTimeout = null; }
+    incomingOverlay.classList.remove("active");
+    state.currentCallerId = null;
+  }
+});
+
+// ---------- Landing ----------
 function initLanding() {
   $("#phone-icon-btn").addEventListener("click", () => {
     nameModal.classList.add("active");
@@ -102,134 +134,51 @@ function initLanding() {
   });
 }
 
-// ---------- Step 2: Name Submit → Choice Screen ----------
+// ---------- Name Submit → Choice Screen ----------
 function submitName() {
   const name = $("#name-input").value.trim();
   if (!name) { showToast("Please enter a name"); return; }
-
   state.userName = name;
-  state.userId = generateId();
-  nameModal.classList.remove("active");
-
   $("#choice-user-name").textContent = name;
+  nameModal.classList.remove("active");
   showScreen("choice");
 }
 
-// ---------- Step 3a: Create Lobby ----------
-async function createLobby() {
-  let code = generateLobbyCode();
-
-  try {
-    // Check for collision (extremely unlikely)
-    const snap = await lobbyRootRefForCode(code).once("value");
-    if (snap.exists()) code = generateLobbyCode();
-
-    state.lobbyCode = code;
-    state.isHost = true;
-
-    // Write lobby metadata
-    await db.ref("lobbies/" + code + "/meta").set({
-      hostId: state.userId,
-      hostName: state.userName,
-      createdAt: firebase.database.ServerValue.TIMESTAMP,
-    });
-
-    enterLobby();
-  } catch (err) {
-    console.error("createLobby error:", err);
-    showToast("Failed to create lobby. Check Firebase config.");
-  }
+// ---------- Create Lobby ----------
+function createLobby() {
+  socket.emit("createRoom", { name: state.userName });
 }
 
-function lobbyRootRefForCode(code) {
-  return db.ref("lobbies/" + code);
-}
-
-// ---------- Step 3b: Join Lobby by Code ----------
-async function joinLobbyByCode() {
+// ---------- Join Lobby by Code ----------
+function joinLobbyByCode() {
   const input = $("#lobby-code-input").value.trim().toUpperCase();
-  if (input.length !== 6) { showToast("Code must be 6 characters"); return; }
-
-  try {
-    // Check lobby exists and has users or meta
-    const metaSnap = await db.ref("lobbies/" + input + "/meta").once("value");
-    if (!metaSnap.exists()) { showToast("Lobby not found"); return; }
-
-    state.lobbyCode = input;
-    state.isHost = false;
-    joinModal.classList.remove("active");
-
-    enterLobby();
-  } catch (err) {
-    console.error("joinLobbyByCode error:", err);
-    showToast("Failed to join lobby. Check Firebase config.");
-  }
+  if (input.length !== 4) { showToast("Code must be 4 characters"); return; }
+  socket.emit("joinRoom", { code: input, name: state.userName });
 }
 
-// ---------- Enter Lobby (shared by create & join) ----------
-function enterLobby() {
+// ---------- Enter Lobby Screen (shared) ----------
+function enterLobbyScreen() {
   showScreen("lobby");
   $("#lobby-user-name").textContent = state.userName;
   $("#lobby-code-text").textContent = state.lobbyCode;
 
-  // Write presence
-  const ref = userRef();
-  ref.set({
-    name: state.userName,
-    status: "available",
-    isHost: state.isHost,
-    joinedAt: firebase.database.ServerValue.TIMESTAMP,
-  });
-  ref.onDisconnect().remove();
-
-  // Init PeerJS
-  state.peer = new Peer(state.userId, { debug: 0 });
+  // Initialize PeerJS with socket ID as peer ID
+  if (state.peer) { state.peer.destroy(); }
+  state.peer = new Peer(socket.id, { debug: 0 });
   state.peer.on("error", (err) => {
     console.error("PeerJS error:", err);
-    if (err.type === "unavailable-id") {
-      showToast("Connection conflict. Refreshing...");
-      setTimeout(() => location.reload(), 1500);
-    }
   });
   state.peer.on("call", handleIncomingPeerCall);
-
-  listenLobby();
-  listenCallRequests();
-  watchOwnStatus();
 }
 
 // ---------- Leave Lobby ----------
 function leaveLobby() {
-  if (state.currentCall) { state.currentCall.close(); state.currentCall = null; }
-  if (state.localStream) { state.localStream.getTracks().forEach((t) => t.stop()); state.localStream = null; }
-  if (state.remoteAudio) { state.remoteAudio.pause(); state.remoteAudio.srcObject = null; state.remoteAudio = null; }
-  if (state.callTimerInterval) { clearInterval(state.callTimerInterval); state.callTimerInterval = null; }
-  if (state.incomingTimeout) { clearTimeout(state.incomingTimeout); state.incomingTimeout = null; }
-  if (state.callingTimeout) { clearTimeout(state.callingTimeout); state.callingTimeout = null; }
-
-  if (state.lobbyCode) {
-    usersRef().off();
-    userRef().off();
-    callReqRef().off();
-    userRef().remove();
-    callReqRef().remove();
-
-    // Clean up empty lobby
-    const code = state.lobbyCode;
-    usersRef().once("value", (snap) => {
-      if (!snap.exists() || snap.numChildren() === 0) {
-        db.ref("lobbies/" + code).remove();
-      }
-    });
-  }
-
+  endCallLocal();
+  socket.emit("leaveLobby");
   if (state.peer) { state.peer.destroy(); state.peer = null; }
-
-  state.userId = null;
-  state.userName = null;
   state.lobbyCode = null;
   state.isHost = false;
-
+  state.userName = null;
   incomingOverlay.classList.remove("active");
   showScreen("landing");
   $("#name-input").value = "";
@@ -237,24 +186,18 @@ function leaveLobby() {
 }
 
 // ---------- Lobby Rendering ----------
-function listenLobby() {
-  usersRef().on("value", (snapshot) => {
-    renderLobby(snapshot.val() || {});
-  });
-}
-
-function renderLobby(users) {
+function renderLobby(players) {
   lobbyGrid.innerHTML = "";
-  const ids = Object.keys(users);
 
-  ids.sort((a, b) => {
-    if (a === state.userId) return -1;
-    if (b === state.userId) return 1;
-    return users[a].name.localeCompare(users[b].name);
+  // Sort: self first, then alphabetically
+  const sorted = [...players].sort((a, b) => {
+    if (a.id === socket.id) return -1;
+    if (b.id === socket.id) return 1;
+    return a.name.localeCompare(b.name);
   });
 
-  if (ids.length <= 1 && ids[0] === state.userId) {
-    renderUserCard(ids[0], users[ids[0]]);
+  if (sorted.length <= 1 && sorted[0] && sorted[0].id === socket.id) {
+    renderUserCard(sorted[0]);
     const empty = document.createElement("div");
     empty.className = "lobby-empty";
     empty.textContent = "Share the code to invite others!";
@@ -262,19 +205,19 @@ function renderLobby(users) {
     return;
   }
 
-  if (ids.length === 0) {
+  if (sorted.length === 0) {
     lobbyGrid.innerHTML = '<div class="lobby-empty">Waiting for others to join...</div>';
     return;
   }
 
-  ids.forEach((id) => renderUserCard(id, users[id]));
+  sorted.forEach((p) => renderUserCard(p));
 }
 
-function renderUserCard(id, user) {
-  const isSelf = id === state.userId;
-  const isAvailable = user.status === "available";
-  const isInCall = user.status === "in-call";
-  const isCalling = user.status === "calling";
+function renderUserCard(player) {
+  const isSelf = player.id === socket.id;
+  const isAvailable = player.status === "available";
+  const isInCall = player.status === "in-call";
+  const isCalling = player.status === "calling";
 
   const card = document.createElement("div");
   card.className = "user-card";
@@ -288,12 +231,12 @@ function renderUserCard(id, user) {
   else if (isCalling) { statusClass = "calling"; statusLabel = "Calling..."; }
 
   const labels = [];
-  if (user.isHost) labels.push('<div class="host-label">Host</div>');
+  if (player.isHost) labels.push('<div class="host-label">Host</div>');
   if (isSelf) labels.push('<div class="you-label">You</div>');
 
   card.innerHTML = `
-    <div class="avatar" style="background:${avatarColor(user.name)}">${getInitials(user.name)}</div>
-    <div class="user-name">${escapeHtml(user.name)}</div>
+    <div class="avatar" style="background:${avatarColor(player.name)}">${getInitials(player.name)}</div>
+    <div class="user-name">${escapeHtml(player.name)}</div>
     ${labels.join("")}
     <div class="status-badge ${statusClass}">
       <span class="status-dot"></span>
@@ -302,68 +245,46 @@ function renderUserCard(id, user) {
   `;
 
   if (!isSelf && isAvailable) {
-    card.addEventListener("click", () => initiateCall(id, user.name));
+    card.addEventListener("click", () => initiateCall(player.id, player.name));
   }
 
   lobbyGrid.appendChild(card);
 }
 
-// ---------- Call Requests ----------
-function listenCallRequests() {
-  callReqRef().on("value", (snapshot) => {
-    const req = snapshot.val();
-    if (req && req.from) showIncomingCall(req.from, req.fromName);
-  });
-}
-
+// ---------- Initiate Call (caller side) ----------
 function initiateCall(targetId, targetName) {
-  userRef().update({ status: "calling" });
-
-  db.ref("lobbies/" + state.lobbyCode + "/callRequests/" + targetId).set({
-    from: state.userId,
-    fromName: state.userName,
-    timestamp: firebase.database.ServerValue.TIMESTAMP,
-  });
+  state.currentTargetId = targetId;
+  socket.emit("callUser", { targetId });
 
   $("#calling-target-name").textContent = targetName;
   showScreen("calling");
 
-  const targetUserRef = userRef(targetId);
-  const onTargetChange = (snap) => {
-    if (!snap.val()) {
-      cancelOutgoingCall(targetId);
-      targetUserRef.off("value", onTargetChange);
-    }
-  };
-  targetUserRef.on("value", onTargetChange);
-
+  // Auto-cancel after 25 seconds
   state.callingTimeout = setTimeout(() => {
-    cancelOutgoingCall(targetId);
-    targetUserRef.off("value", onTargetChange);
+    cancelOutgoingCall();
     showToast("No answer");
   }, 25000);
 
+  // Cancel button
   const cancelBtn = $("#btn-cancel-call");
   const newCancelBtn = cancelBtn.cloneNode(true);
   cancelBtn.parentNode.replaceChild(newCancelBtn, cancelBtn);
-  newCancelBtn.addEventListener("click", () => {
-    cancelOutgoingCall(targetId);
-    targetUserRef.off("value", onTargetChange);
-  });
+  newCancelBtn.addEventListener("click", () => cancelOutgoingCall());
 }
 
-function cancelOutgoingCall(targetId) {
+function cancelOutgoingCall() {
   if (state.callingTimeout) { clearTimeout(state.callingTimeout); state.callingTimeout = null; }
-  db.ref("lobbies/" + state.lobbyCode + "/callRequests/" + targetId).remove();
-  if (state.userId) userRef().update({ status: "available" });
+  socket.emit("cancelCall");
+  state.currentTargetId = null;
   showScreen("lobby");
 }
 
 // ---------- Incoming Call ----------
-function showIncomingCall(fromId, fromName) {
+function showIncomingCall(callerId, callerName) {
   if (incomingOverlay.classList.contains("active")) return;
+  state.currentCallerId = callerId;
   incomingOverlay.classList.add("active");
-  $("#incoming-caller-name").textContent = fromName;
+  $("#incoming-caller-name").textContent = callerName;
 
   let countdown = 20;
   const countdownEl = $("#incoming-countdown");
@@ -375,7 +296,7 @@ function showIncomingCall(fromId, fromName) {
   }, 1000);
 
   state.incomingTimeout = setTimeout(() => {
-    declineCall(fromId);
+    declineCall();
     clearInterval(countdownInterval);
   }, 20000);
 
@@ -388,44 +309,41 @@ function showIncomingCall(fromId, fromName) {
 
   newAcceptBtn.addEventListener("click", () => {
     clearTimeout(state.incomingTimeout); clearInterval(countdownInterval);
-    acceptCall(fromId, fromName);
+    acceptCall(callerId, callerName);
   });
   newDeclineBtn.addEventListener("click", () => {
     clearTimeout(state.incomingTimeout); clearInterval(countdownInterval);
-    declineCall(fromId);
+    declineCall();
   });
 }
 
-function declineCall(fromId) {
-  incomingOverlay.classList.remove("active");
-  callReqRef().remove();
-  userRef(fromId).once("value", (snap) => {
-    if (snap.val() && snap.val().status === "calling") {
-      userRef(fromId).update({ status: "available" });
-    }
-  });
-}
-
-async function acceptCall(fromId, fromName) {
+async function acceptCall(callerId, callerName) {
   incomingOverlay.classList.remove("active");
 
   try {
     state.localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
   } catch (err) {
     showToast("Microphone access denied. Cannot start call.");
-    callReqRef().remove();
-    userRef(fromId).once("value", (snap) => {
-      if (snap.val() && snap.val().status === "calling") {
-        userRef(fromId).update({ status: "available" });
-      }
-    });
+    socket.emit("declineCall", { callerId });
+    state.currentCallerId = null;
     return;
   }
 
-  userRef().update({ status: "in-call", callPartner: fromId });
-  userRef(fromId).update({ status: "in-call", callPartner: state.userId });
-  callReqRef().remove();
-  startCallScreen(fromName);
+  state.currentPartnerId = callerId;
+  state.currentPartnerName = callerName;
+  state.currentCallerId = null;
+
+  socket.emit("acceptCall", { callerId });
+  startCallScreen(callerName);
+  // Callee waits for PeerJS call from the caller (handled by peer.on("call"))
+}
+
+function declineCall() {
+  incomingOverlay.classList.remove("active");
+  if (state.currentCallerId) {
+    socket.emit("declineCall", { callerId: state.currentCallerId });
+    state.currentCallerId = null;
+  }
 }
 
 // ---------- PeerJS Voice ----------
@@ -434,8 +352,8 @@ function handleIncomingPeerCall(call) {
   call.answer(state.localStream);
   state.currentCall = call;
   call.on("stream", (rs) => playRemoteStream(rs));
-  call.on("close", () => endCall());
-  call.on("error", () => endCall());
+  call.on("close", () => endCallLocal());
+  call.on("error", () => endCallLocal());
 }
 
 async function startPeerCall(targetId) {
@@ -449,8 +367,8 @@ async function startPeerCall(targetId) {
   if (!call) { showToast("Failed to connect call"); endCall(); return; }
   state.currentCall = call;
   call.on("stream", (rs) => playRemoteStream(rs));
-  call.on("close", () => endCall());
-  call.on("error", () => endCall());
+  call.on("close", () => endCallLocal());
+  call.on("error", () => endCallLocal());
 }
 
 function playRemoteStream(stream) {
@@ -478,39 +396,22 @@ function startCallScreen(partnerName) {
   newHangup.addEventListener("click", () => endCall());
 }
 
+// End call (initiated by us — notify server)
 function endCall() {
+  socket.emit("endCall");
+  endCallLocal();
+}
+
+// End call locally (cleanup streams/UI — called by both sides)
+function endCallLocal() {
   if (state.currentCall) { state.currentCall.close(); state.currentCall = null; }
   if (state.localStream) { state.localStream.getTracks().forEach((t) => t.stop()); state.localStream = null; }
   if (state.remoteAudio) { state.remoteAudio.pause(); state.remoteAudio.srcObject = null; }
   if (state.callTimerInterval) { clearInterval(state.callTimerInterval); state.callTimerInterval = null; }
-  if (state.userId && state.lobbyCode) {
-    userRef().update({ status: "available", callPartner: null });
-  }
-  if (state.userId) showScreen("lobby");
-}
-
-// ---------- Watch Own Status (caller side) ----------
-function watchOwnStatus() {
-  userRef().on("value", (snap) => {
-    const data = snap.val();
-    if (!data) return;
-
-    if (data.status === "in-call" && data.callPartner && screens.calling.classList.contains("active")) {
-      if (state.callingTimeout) { clearTimeout(state.callingTimeout); state.callingTimeout = null; }
-      const partnerId = data.callPartner;
-      userRef(partnerId).once("value", (pSnap) => {
-        const pData = pSnap.val();
-        startCallScreen(pData ? pData.name : "Unknown");
-        startPeerCall(partnerId);
-      });
-    }
-
-    if (data.status === "available" && screens.calling.classList.contains("active")) {
-      if (state.callingTimeout) { clearTimeout(state.callingTimeout); state.callingTimeout = null; }
-      showToast("Call was declined");
-      showScreen("lobby");
-    }
-  });
+  state.currentPartnerId = null;
+  state.currentPartnerName = null;
+  state.currentTargetId = null;
+  if (state.lobbyCode) showScreen("lobby");
 }
 
 // ---------- Copy Code ----------
@@ -544,7 +445,6 @@ document.addEventListener("DOMContentLoaded", () => {
   toast = $("#toast");
   lobbyGrid = $("#lobby-grid");
 
-  // Landing
   initLanding();
 
   // Name modal
@@ -568,12 +468,4 @@ document.addEventListener("DOMContentLoaded", () => {
   // Lobby
   $("#btn-leave").addEventListener("click", leaveLobby);
   $("#btn-copy-code").addEventListener("click", copyLobbyCode);
-});
-
-// Page unload cleanup
-window.addEventListener("beforeunload", () => {
-  if (state.userId && state.lobbyCode) {
-    userRef().remove();
-    callReqRef().remove();
-  }
 });

@@ -43,7 +43,7 @@
   <div id="join-modal" class="modal-overlay">
     <div class="modal">
       <h2>Enter Lobby Code</h2>
-      <input type="text" id="lobby-code-input" placeholder="e.g. A3BK7M" maxlength="6" autocomplete="off" />
+      <input type="text" id="lobby-code-input" placeholder="e.g. A3BK" maxlength="4" autocomplete="off" />
       <button id="btn-submit-code" class="btn-join">Join</button>
       <button id="btn-back-to-choice" class="btn-back">Back</button>
     </div>
@@ -124,8 +124,7 @@
   <div id="toast" class="toast"></div>
 
   <!-- ===== Scripts ===== -->
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+  <script src="/socket.io/socket.io.js"></script>
   <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
   <script src="app.js"></script>
 
